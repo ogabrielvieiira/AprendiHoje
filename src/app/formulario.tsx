@@ -1,13 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { gravacoes } from '../utils/store';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { api } from '../utils/api';
+import Botao from '../components/botao';
 
 type FormData = {
   titulo: string;
+  descricao: string;
   categoria: string;
-  favorito: boolean;
+  importante: boolean;
 };
 
 const CATEGORIAS = ['Exatas', 'Humanas', 'Biológicas', 'Idiomas', 'Artes', 'Outros'];
@@ -21,8 +23,9 @@ export default function Formulario() {
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       titulo: '',
+      descricao: '',
       categoria: 'Outros',
-      favorito: false,
+      importante: false,
     }
   });
 
@@ -31,20 +34,20 @@ export default function Formulario() {
       setSalvando(true);
 
       const novaAnotacao = {
-        id: Math.random().toString(36).substring(7),
         titulo: data.titulo,
+        descricao: data.descricao,
         categoria: data.categoria,
-        favorito: data.favorito,
-        audioUri: uri,
+        importante: data.importante,
+        audioUri: uri, 
       };
 
-      gravacoes.push(novaAnotacao);
+      await api.post('/anotacoes', novaAnotacao);
 
-      Alert.alert('Sucesso!', 'Nota salva temporariamente.');
+      Alert.alert('Sucesso!', 'Nota salva com sucesso.');
       router.replace('/');
 
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar a anotação.');
+      Alert.alert('Erro', 'Não foi possível salvar a anotação na nuvem.');
     } finally {
       setSalvando(false);
     }
@@ -54,7 +57,7 @@ export default function Formulario() {
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
         <Text style={styles.title}>Salvar Anotação</Text>
-        <Text style={styles.subtitle}>Defina o título e a matéria do seu áudio.</Text>
+        <Text style={styles.subtitle}>Defina os detalhes do seu áudio.</Text>
 
         <Text style={styles.label}>Tópico / Título *</Text>
         <Controller
@@ -73,6 +76,25 @@ export default function Formulario() {
         />
         {errors.titulo && <Text style={styles.errorText}>{errors.titulo.message}</Text>}
 
+        <Text style={styles.label}>Descrição / Resumo *</Text>
+        <Controller
+          control={control}
+          rules={{ required: 'A descrição é obrigatória.' }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={[styles.input, styles.textArea, errors.descricao && styles.inputError]}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              placeholder="Escreva um breve resumo do áudio..."
+              multiline
+              numberOfLines={4}
+            />
+          )}
+          name="descricao"
+        />
+        {errors.descricao && <Text style={styles.errorText}>{errors.descricao.message}</Text>}
+
         <Text style={styles.label}>Matéria / Categoria</Text>
         <Controller
           control={control}
@@ -87,9 +109,7 @@ export default function Formulario() {
                     onPress={() => onChange(cat)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                      {cat}
-                    </Text>
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{cat}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -110,21 +130,15 @@ export default function Formulario() {
                 thumbColor={value ? '#006d00' : '#f4f3f4'}
               />
             )}
-            name="favorito"
+            name="importante"
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.button, salvando && styles.buttonDisabled]}
+        <Botao 
+          title="Salvar Áudio"
           onPress={handleSubmit(onSubmit)}
-          disabled={salvando}
-        >
-          {salvando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Salvar Áudio</Text>
-          )}
-        </TouchableOpacity>
+          loading={salvando}
+        />
       </View>
     </ScrollView>
   );
@@ -145,14 +159,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
   },
+  textArea: { height: 100, textAlignVertical: 'top' },
   inputError: { borderColor: '#dc3545', borderWidth: 2 },
   errorText: { color: '#dc3545', marginBottom: 15, marginTop: -15, fontWeight: 'bold' },
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 25,
-  },
+  categoriesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 25 },
   chip: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -161,18 +171,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
   },
-  chipSelected: {
-    backgroundColor: '#006d00',
-    borderColor: '#006d00',
-  },
-  chipText: {
-    color: '#555',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  chipTextSelected: {
-    color: '#fff',
-  },
+  chipSelected: { backgroundColor: '#006d00', borderColor: '#006d00' },
+  chipText: { color: '#555', fontSize: 14, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -184,14 +185,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
   },
-  labelSwitch: { fontSize: 16, fontWeight: 'bold', color: '#444' },
-  button: {
-    backgroundColor: '#28a745',
-    padding: 18,
-    borderRadius: 10,
-    alignItems: 'center',
-    elevation: 3,
-  },
-  buttonDisabled: { backgroundColor: '#6c757d' },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  labelSwitch: { fontSize: 16, fontWeight: 'bold', color: '#444' }
 });

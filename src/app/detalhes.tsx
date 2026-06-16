@@ -6,7 +6,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 export default function Detalhes() {
   const params = useLocalSearchParams();
   
-  const { titulo, categoria, favorito, audioUri } = params;
+  const { titulo, categoria, importante, audioUri, descricao } = params;
 
   const player = useAudioPlayer(audioUri as string);
 
@@ -20,9 +20,16 @@ export default function Detalhes() {
             <Text style={styles.category}>{categoria || 'Sem categoria'}</Text>
           </View>
           
-          {favorito === 'true' && (
-            <Text style={styles.star}>★ Favorito</Text>
+          {importante === 'true' && (
+            <Text style={styles.star}>★ Importante</Text>
           )}
+        </View>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.label}>Resumo / Descrição:</Text>
+          <Text style={styles.description}>
+            {descricao ? descricao : 'Nenhuma descrição fornecida para este áudio.'}
+          </Text>
         </View>
 
         <View style={styles.playerBox}>

@@ -1,56 +1,36 @@
-# Welcome to your Expo app 👋
+# Projeto Final de Desenvolvimento mobile - AprendiHoje
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Proposta do Sistema
+O sistema tem o intuito de guardar anotações e resumos importantes sobre conteúdos vistos em aula. O sistema resolve o problema de esquecimento pós-aula, incentivando os alunos a gravarem resumos verbais curtos em formato de áudio. Isso facilita a revisão rápida e a consolidação da matéria.
 
-## Get started
+## Aplicação do Microfone
+O recurso de hardware central da aplicação é o Microfone, integrado nativamente através da biblioteca `expo-audio`. 
+A sua aplicação é essencial para o fluxo do sistema: 
+- O aplicativo faz a gestão de permissões em tempo de execução, solicitando ao utilizador o acesso ao microfone na primeira vez que a tela de gravação é aberta. 
+- Com a permissão concedida, o hardware é ativado para captar a voz do aluno, permitindo iniciar, parar e pré-visualizar a gravação do resumo antes de avançar para a etapa de categorização.
 
-1. Install dependencies
+## Descrição das Telas
+O aplicativo é composto por 4 telas principais interligadas:
 
-   ```bash
-   npm install
-   ```
+1. **Home (index.tsx)**: 
+   - É a tela inicial que exibe a listagem de todos os resumos gravados.
+   - Consome os dados de uma API externa.
+   - Permite filtrar as anotações por matérias e excluir registros.
 
-2. Start the app
+2. **Gravador (gravador.tsx)**: 
+   - A tela de interação direta com o hardware. 
+   - Contém os controlos de gravação e um reprodutor de áudio para ouvir a prévia. Após a gravação, permite avançar para o formulário passando o `URI` do áudio como parâmetro de rota.
 
-   ```bash
-   npx expo start
-   ```
+3. **Formulário de Submissão (formulario.tsx)**: 
+   - Tela responsável por classificar o áudio gravado.
+   - **O Formulário Principal** contém 4 campos de captura de dados validados através do *React Hook Form*:
+     - **Tópico / Título** (Entrada de Texto obrigatória).
+     - **Descrição / Resumo** (Área de Texto multilinhas obrigatória).
+     - **Matéria / Categoria** (Seletores visuais tipo *Chips*).
+     - **Marcar como Importante** (*Switch* booleano).
+   - Ao submeter, os dados são enviados e guardados na Nuvem através de uma API (via Axios - POST) com feedback de carregamento (*ActivityIndicator*).
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+4. **Detalhes (detalhes.tsx)**: 
+   - Tela acedida ao clicar num cartão na Home. 
+   - Recebe parâmetros da rota para exibir o título, categoria, status de favorito e a descrição completa do resumo.
+   - Disponibiliza um player de áudio completo para o aluno ouvir a sua revisão.

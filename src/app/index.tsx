@@ -1,15 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { gravacoes as gravacoesDaStore } from '../utils/store';
+import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { api } from '../utils/api';
+import Card from '../components/card';
 
 type Gravacao = {
   id: string;
   titulo: string;
-  categoria: string;
   descricao: string;
-  favorito: boolean;
+  categoria: string;
+  importante: boolean;
   audioUri: string;
 };
 
@@ -22,17 +22,25 @@ export default function Home() {
   
   const router = useRouter();
 
-  const buscarGravacoes = () => {
-    setCarregando(true);
-    setGravacoes([...gravacoesDaStore]); 
-    setCarregando(false);
+  const buscarGravacoes = async () => {
+    try {
+      setCarregando(true);
+      const response = await api.get('/anotacoes');
+      setGravacoes(response.data);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível carregar as suas anotações.');
+    } finally {
+      setCarregando(false);
+    }
   };
 
-  const excluirGravacao = (id: string) => {
-    const index = gravacoesDaStore.findIndex(item => item.id === id);
-    if (index > -1) {
-      gravacoesDaStore.splice(index, 1);
-      buscarGravacoes(); 
+  const excluirGravacao = async (id: string) => {
+    try {
+      await api.delete(`/anotacoes/${id}`);
+      Alert.alert('Sucesso', 'Anotação excluída.');
+      buscarGravacoes();
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível excluir a anotação.');
     }
   };
 
@@ -49,6 +57,7 @@ export default function Home() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Minhas Notas de Estudo</Text>
+      
       <View style={styles.filtroContainer}>
         <ScrollView 
           horizontal 
@@ -76,7 +85,7 @@ export default function Home() {
       </View>
 
       {carregando ? (
-        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+        <ActivityIndicator size="large" color="#006d00" style={styles.loader} />
       ) : (
         <FlatList
           data={gravacoesFiltradas} 
@@ -87,34 +96,23 @@ export default function Home() {
             </Text>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.card}
+            <Card
+              titulo={item.titulo}
+              categoria={item.categoria}
+              importante={item.importante}
               onPress={() => router.push({ 
                 pathname: '/detalhes', 
                 params: {
                   id: item.id,
                   titulo: item.titulo,
+                  descricao: item.descricao,
                   categoria: item.categoria,
-                  favorito: String(item.favorito), 
+                  importante: String(item.importante),
                   audioUri: item.audioUri
                 } 
               })}
-            >
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardTitle}>{item.titulo}</Text>
-                <Text style={styles.cardCategory}>{item.categoria}</Text>
-                {item.favorito ? (
-                  <Text style={styles.star}>★ Favorito</Text>
-                ) : null}
-              </View>
-
-              <TouchableOpacity 
-                style={styles.deleteButton}
-                onPress={() => excluirGravacao(item.id)}
-              >
-                <Ionicons name="trash-outline" size={24} color="#dc3545" />
-              </TouchableOpacity>
-            </TouchableOpacity>
+              onDelete={() => excluirGravacao(item.id)}
+            />
           )}
         />
       )}
@@ -145,25 +143,6 @@ const styles = StyleSheet.create({
   filtroTextAtivo: { color: '#fff' },
   loader: { marginTop: 50 },
   emptyText: { textAlign: 'center', color: '#666', marginTop: 50, fontSize: 16 },
-  card: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#222' },
-  cardCategory: { fontSize: 14, color: '#666', marginTop: 4 },
-  star: { color: '#FFD700', fontSize: 16, fontWeight: 'bold', marginTop: 4 },
-  deleteButton: { padding: 10, marginLeft: 10 },
   fab: {
     position: 'absolute',
     bottom: 30,
